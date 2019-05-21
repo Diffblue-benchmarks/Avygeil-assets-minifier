@@ -23,13 +23,11 @@ public class AssetsRules implements IOFileFilter, Predicate<String> {
 	final List<String> entryWhitelistFilter = new ArrayList<>();
 	final List<String> entryBlacklistFilter = new ArrayList<>();
 	
-	public AssetsRules(File rulesFile, File outputFolder) throws IOException {
-		parseRulesFile(rulesFile, outputFolder);
+	public AssetsRules(List<String> lines, File outputFolder) throws IOException {
+		parseRulesFile(lines, outputFolder);
 	}
 	
-	private void parseRulesFile(File rulesFile, File outputFolder) throws IOException {
-		List<String> lines = FileUtils.readLines(rulesFile);
-		
+	private void parseRulesFile(List<String> lines, File outputFolder) throws IOException {		
 		for (String line : lines) {
 			int splitMax;
 			

@@ -1,15 +1,19 @@
 package com.avygeil.jkaserverassetsminifier;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -42,60 +46,114 @@ public class JKAServerAssetsMinifier {
 			return;
 		}
 		
-		Path assetsRulesFilePath = Paths.get(args[0]);
+		// input folder
 		
-		Path inputFolderPath = Paths.get(args[1]);
+		File inputFolder = getFolderFromString(args[1]);
 		
-		if (!isPathDirectory(inputFolderPath)) {
-			System.out.println("Input folder must be a directory!");
+		if (inputFolder == null) {
 			return;
 		}
 		
-		Path outputFolderPath;
+		// output folder
+		
+		File outputFolder;
 		
 		if (args.length == 2) {
-			outputFolderPath = inputFolderPath;
+			outputFolder = inputFolder;
 		} else {
-			outputFolderPath = Paths.get(args[2]);
+			outputFolder = getFolderFromString(args[2]);
 			
-			if (!isPathDirectory(outputFolderPath)) {
-				System.out.println("Output folder must be a directory!");
+			if (outputFolder == null) {
 				return;
 			}
 		}
 		
-		File assetsRulesFile = assetsRulesFilePath.toFile();
-		
-		if (!assetsRulesFile.exists()) {
-			System.out.println("Assets rules file " + assetsRulesFile.getAbsolutePath() + " does not exist!");
-			return;
-		}
-		
-		if (assetsRulesFile.isDirectory()) {
-			System.out.println("Assets rules file must be a file!");
-			return;
-		}
-		
-		File inputFolder = inputFolderPath.toFile();
-		File outputFolder = outputFolderPath.toFile();
-		
-		AssetsRules assetsRules;
-		
 		try {
 			FileUtils.forceMkdir(outputFolder);
-			assetsRules = new AssetsRules(assetsRulesFile, outputFolder);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
 		}
 		
-		System.out.println("Loaded rules from " + assetsRulesFile.getAbsolutePath());
+		// assets rules file
+		
+		List<String> rulesFileLines = readResourceLines(args[0]);
+				
+		if (rulesFileLines == null) {
+			return;
+		}
+				
+		AssetsRules assetsRules;
+		try {
+			assetsRules = new AssetsRules(rulesFileLines, outputFolder);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
+		
+		System.out.println("Loaded rules successfully from " + args[0]);
 		System.out.println("Minified output: " + assetsRules.getOutFile().getName());
 		System.out.println("Input file filters: " + assetsRules.getNumInputFileFilters());
 		System.out.println("Whitelist filters: " + assetsRules.getNumWhitelistFilters());
 		System.out.println("Blacklist filters: " + assetsRules.getNumBlacklistFilters());
 		
 		new JKAServerAssetsMinifier(inputFolder, outputFolder, assetsRules).minify();
+	}
+	
+	private static List<String> readResourceLines(String resourceString) {
+		try (InputStream is = JKAServerAssetsMinifier.class.getClassLoader().getResourceAsStream(resourceString)) {
+			if (is != null) {
+				
+				// file exists in classpath
+				
+				List<String> result = new ArrayList<>();
+				
+				try (InputStreamReader isr = new InputStreamReader(is)) {
+					try (BufferedReader reader = new BufferedReader(isr)) {
+						for (String line; (line = reader.readLine()) != null;) {
+						    result.add(line);
+						}
+					}
+				}
+				
+				return result;
+			} else {
+				
+				// try on disk
+				
+				System.out.println("Resource " + resourceString + " not found inside JAR, assuming file is on disk");
+				
+				Path resourcePath = Paths.get(resourceString);
+				File resourceFile = resourcePath.toFile();
+				
+				if (!resourceFile.exists()) {
+					System.out.println("Resource file " + resourceFile.getAbsolutePath() + " does not exist on disk!");
+					return null;
+				}
+				
+				if (resourceFile.isDirectory()) {
+					System.out.println("Resource file " + resourceFile.getAbsolutePath() + " file must be a file!");
+					return null;
+				}
+				
+				return Files.readAllLines(resourcePath);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return null;
+	}
+	
+	private static File getFolderFromString(String folderString) {
+		Path folderPath = Paths.get(folderString);
+		
+		if (!isPathDirectory(folderPath)) {
+			System.out.println(folderString + " is not a directory!");
+			return null;
+		}
+		
+		return folderPath.toFile();
 	}
 	
 	private static boolean isPathDirectory(Path path) {
