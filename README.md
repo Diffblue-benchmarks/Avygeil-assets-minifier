@@ -1,5 +1,7 @@
 # assets-minifier
 
+See the Releases section for downloads.
+
 ## Compiling
 
 JDK 1.8+ is required.
