@@ -18,10 +18,10 @@ import org.apache.commons.lang3.StringUtils;
 
 public class AssetsRules implements IOFileFilter, Predicate<String> {
 	
-	File outFile;
-	final Map<String, String> inputFileFilter = new HashMap<>();
-	final List<String> entryWhitelistFilter = new ArrayList<>();
-	final List<String> entryBlacklistFilter = new ArrayList<>();
+	private File outFile;
+	private final Map<String, String> inputFileFilter = new HashMap<>();
+	private final List<String> entryWhitelistFilter = new ArrayList<>();
+	private final List<String> entryBlacklistFilter = new ArrayList<>();
 	
 	public AssetsRules(List<String> lines, File outputFolder) throws IOException {
 		parseRulesFile(lines, outputFolder);

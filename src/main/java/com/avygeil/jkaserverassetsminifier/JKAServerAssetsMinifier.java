@@ -10,16 +10,20 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
@@ -161,9 +165,10 @@ public class JKAServerAssetsMinifier {
 		return !test.exists() ? test.getName().lastIndexOf('.') == -1 : test.isDirectory();
 	}
 	
-	final File inputFolder;
-	final File outputFolder;
-	final AssetsRules assetsRules;
+	private final File inputFolder;
+	private final File outputFolder;
+	private final AssetsRules assetsRules;
+	private final Map<String, Long> zipTimeMap = new HashMap<>();
 	
 	public JKAServerAssetsMinifier(File inputFolder, File outputFolder, AssetsRules assetsRules) {
 		this.inputFolder = inputFolder;
@@ -246,6 +251,10 @@ public class JKAServerAssetsMinifier {
 	                try (InputStream in = inZipFile.getInputStream(entry)) {
 	                    try (OutputStream out = new FileOutputStream(entryPath.toFile())) {
 	                        IOUtils.copy(in, out);
+	                        FileTime lastModified = entry.getLastModifiedTime();
+	                        if (lastModified != null) {
+	                        	zipTimeMap.put(FilenameUtils.separatorsToSystem(entry.getName().toLowerCase()), lastModified.toMillis());
+	                        }
 	                        ++extractedEntries;
 	                    }
 	                }
@@ -263,7 +272,11 @@ public class JKAServerAssetsMinifier {
 					f -> {
 						try {
 							Path targetPath = inDir.toPath().relativize(f.toPath());
-							outZip.putNextEntry(new ZipEntry(targetPath.toString()));
+							ZipEntry newEntry = new ZipEntry(targetPath.toString());
+							if (zipTimeMap.containsKey(targetPath.toString().toLowerCase())) {
+								newEntry.setTime(zipTimeMap.get(targetPath.toString().toLowerCase()).longValue());
+							}
+							outZip.putNextEntry(newEntry);
 							byte[] bytes = FileUtils.readFileToByteArray(f);
 							outZip.write(bytes, 0, bytes.length);
 							outZip.closeEntry();
