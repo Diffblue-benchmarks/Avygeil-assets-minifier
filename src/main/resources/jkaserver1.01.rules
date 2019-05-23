@@ -5,9 +5,16 @@ InputFile 3F47006DDE61F171769666F31065A34C assets1.pk3
 InputFile 961AD372C3CD73075D70BA71A497B89E assets2.pk3
 InputFile 71C2EDF5A30135D4AA921BF6259946EE assets3.pk3
 
-EntryWhitelist botroutes/*
 EntryWhitelist botfiles/*
-EntryWhitelist eagle/*
+EntryWhitelist botroutes/*
+EntryWhitelist ext_data/*
 EntryWhitelist maps/*
+EntryWhitelist models/players/*anim*.cfg
+EntryWhitelist shaders/*
 EntryWhitelist scripts/*
-EntryWhitelist strings/English/*
+EntryWhitelist jampgamex86.dll
+EntryWhitelist mpdefault.cfg
+
+EntryBlacklist ext_data/mp/*_overrides.txt
+EntryBlacklist ext_data/*.dat
+EntryBlacklist maps/*.weather
